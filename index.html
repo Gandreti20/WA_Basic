@@ -1,0 +1,198 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Weather App</title>
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css"> <!-- Font Awesome -->
+    <style>
+        body {
+            font-family: 'Roboto', sans-serif;
+            background: linear-gradient(to right, #74ebd5, #acb6e5);
+            margin: 0;
+            padding: 20px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            color: #333;
+        }
+        #weatherApp {
+            background-color: #ffffff;
+            border-radius: 10px;
+            box-shadow: 0 8px 16px rgba(0, 0, 0, 0.2);
+            padding: 30px;
+            width: 350px;
+            text-align: center;
+            transition: transform 0.2s;
+        }
+        #weatherApp:hover {
+            transform: scale(1.05);
+        }
+        h1 {
+            margin-bottom: 20px;
+            font-size: 24px;
+            color: #007bff;
+        }
+        input[type="text"] {
+            width: calc(100% - 24px); /* Adjust width to account for padding */
+            padding: 12px;
+            margin: 10px 0;
+            border: 2px solid #007bff;
+            border-radius: 5px;
+            font-size: 16px;
+            transition: border-color 0.3s;
+            box-sizing: border-box; /* Ensure padding is included in width */
+        }
+        input[type="text"]:focus {
+            border-color: #0056b3;
+            outline: none;
+        }
+        button {
+            padding: 12px 20px;
+            background-color: transparent; /* Make button transparent */
+            color: #007bff; /* Text color */
+            border: 2px solid #007bff; /* Border color */
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 16px;
+            transition: background-color 0.3s, transform 0.2s;
+            width: 100%; /* Make button full width */
+            margin-bottom: 15px; /* Increase gap between buttons */
+        }
+        button:hover {
+            background-color: rgba(0, 123, 255, 0.1); /* Light background on hover */
+            transform: translateY(-2px);
+        }
+        button i {
+            margin-right: 8px; /* Add space between icon and text */
+        }
+        #weather {
+            margin-top: 20px;
+            padding: 15px;
+            border: 1px solid #007bff;
+            border-radius: 5px;
+            background-color: #e7f3ff;
+            color: #333;
+            transition: background-color 0.3s;
+            display: none; /* Initially hidden */
+        }
+        #weather h2 {
+            margin: 0;
+            font-size: 20px;
+            color: #007bff;
+        }
+        #weather p {
+            margin: 5px 0 0;
+        }
+    </style>
+</head>
+<body>
+    <div id="weatherApp">
+        <h1>Weather App</h1>
+        <input type="text" id="city" placeholder="Enter city name">
+        <button id="getWeather"><i class="fas fa-search"></i> Get Weather</button>
+        <button id="getLocationWeather"><i class="fas fa-map-marker-alt"></i> Get Weather by Location</button>
+        <div id="weather"></div>
+    </div>
+
+    <script>
+        const apiKey = "9613dd1e193de674cec4d2bf5d0b72cf"; // Your OpenWeatherMap API key
+
+        function getWeatherIcon(weatherDescription) {
+            if (weatherDescription.includes("clear")) {
+                return '<i class="fas fa-sun"></i>'; // Sun icon for clear weather
+            } else if (weatherDescription.includes("cloud")) {
+                return '<i class="fas fa-cloud"></i>'; // Cloud icon for cloudy weather
+            } else if (weatherDescription.includes("rain")) {
+                return '<i class="fas fa-cloud-showers-heavy"></i>'; // Rain icon
+            } else if (weatherDescription.includes("snow")) {
+                return '<i class="fas fa-snowflake"></i>'; // Snowflake icon
+            } else if (weatherDescription.includes("wind")) {
+                return '<i class="fas fa-wind"></i>'; // Wind icon
+            } else {
+                return '<i class="fas fa-question-circle"></i>'; // Default icon for unknown weather
+            }
+        }
+
+        document.getElementById('getWeather').addEventListener('click', function() {
+            const city = document.getElementById('city').value;
+            if (city.trim() === "") {
+                document.getElementById('weather').style.display = 'none'; // Hide weather container if no city is entered
+                return; // Exit the function if no city is entered
+            }
+            fetchWeather(city);
+        });
+
+        function fetchWeather(city) {
+            const url = `http://api.openweathermap.org/data/2.5/weather?q=${city},IN&appid=${apiKey}&units=metric`;
+            fetch(url)
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error('City not found');
+                    }
+                    return response.json();
+                })
+                .then(data => {
+                    const weatherDescription = data.weather[0].description;
+                    const temperature = data.main.temp;
+                    const humidity = data.main.humidity; // Get humidity
+                    const locationName = data.name; // Get location name
+                    const weatherIcon = getWeatherIcon(weatherDescription); // Get the appropriate icon
+
+                    document.getElementById('weather').innerHTML = 
+                        `<h2>Weather in ${locationName} ${weatherIcon}</h2>
+                         <p>${weatherDescription}, Temperature: ${temperature}°C, Humidity: ${humidity}%</p>`;
+                    document.getElementById('weather').style.display = 'block'; // Show weather container
+                })
+                .catch(error => {
+                    document.getElementById('weather').innerHTML = `<p>Error: ${error.message}</p>`;
+                    document.getElementById('weather').style.display = 'block'; // Show weather container even on error
+                });
+        }
+
+        function fetchWeatherByLocation() {
+            if (navigator.geolocation) {
+                navigator.geolocation.getCurrentPosition(position => {
+                    const lat = position.coords.latitude;
+                    const lon = position.coords.longitude;
+                    const url = `http://api.openweathermap.org/data/2.5/weather?lat=${lat}&lon=${lon}&appid=${apiKey}&units=metric`;
+                    fetch(url)
+                        .then(response => {
+                            if (!response.ok) {
+                                throw new Error('Location not found');
+                            }
+                            return response.json();
+                        })
+                        .then(data => {
+                            const weatherDescription = data.weather[0].description;
+                            const temperature = data.main.temp;
+                            const humidity = data.main.humidity; // Get humidity
+                            const locationName = data.name; // Get location name
+                            const weatherIcon = getWeatherIcon(weatherDescription); // Get the appropriate icon
+
+                            document.getElementById('weather').innerHTML = 
+                                `<h2>Weather in ${locationName} ${weatherIcon}</h2>
+                                 <p>${weatherDescription}, Temperature: ${temperature}°C, Humidity: ${humidity}%</p>`;
+                            document.getElementById('weather').style.display = 'block'; // Show weather container
+                        })
+                        .catch(error => {
+                            document.getElementById('weather').innerHTML = `<p>Error: ${error.message}</p>`;
+                            document.getElementById('weather').style.display = 'block'; // Show weather container even on error
+                        });
+                }, () => {
+                    document.getElementById('weather').innerHTML = `<p>Error: Unable to retrieve your location. Please allow location access.</p>`;
+                    document.getElementById('weather').style.display = 'block'; // Show error message
+                });
+            } else {
+                document.getElementById('weather').innerHTML = `<p>Error: Geolocation is not supported by this browser.</p>`;
+                document.getElementById('weather').style.display = 'block'; // Show error message
+            }
+        }
+
+        // Add an event listener for the new button to fetch weather by location
+        document.getElementById('getLocationWeather').addEventListener('click', fetchWeatherByLocation);
+    </script>
+</body>
+</html>
